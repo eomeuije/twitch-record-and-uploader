@@ -26,6 +26,7 @@ import argparse
 import time
 import threading
 from src.upload.googledrive import Upload
+from src.vpngate import Vpngate
 from typing import List, TypedDict, Union
 import requests
 import json
@@ -220,15 +221,15 @@ class TwitchRecorder:
 
                 # vpn = Vpngate(self.country).start_vpn()
 
-                # ret = subprocess.Popen(["streamlink", "--twitch-disable-hosting", "--twitch-disable-ads", "twitch.tv/" + self.username, self.quality, "-o", file_path])
+                ret = subprocess.call(["streamlink", "--twitch-api-header", "Authorization=" + self.TWITCH_AUTH_TOKEN, "--twitch-disable-hosting", "--twitch-disable-ads", "twitch.tv/" + self.username, self.quality, "-o", file_path])
 
                 # get m3u8 link from https://github.com/Kwabang/Twitch-API#hls
-                url = "http://localhost:5000/hls?id=" + self.username + "&oauth=" + self.TWITCH_AUTH_TOKEN
-                m3u8_link = requests.get(url).text
-                m3u8_link = m3u8_link.split('"')[1]
+                # url = "http://localhost:5000/hls?id=" + self.username + "&oauth=" + self.TWITCH_AUTH_TOKEN
+                # m3u8_link = requests.get(url).text
+                # m3u8_link = m3u8_link.split('"')[1]
                 # print(m3u8_link)
 
-                ret = subprocess.call(["streamlink", "--twitch-disable-hosting", "--twitch-disable-ads", m3u8_link, self.quality, "-o", file_path])
+                # ret = subprocess.call(["py", "C:/Users/euije/AppData/Roaming/Python/Python311/site-packages/streamlink/__main__.py", "streamlink", "--twitch-disable-hosting", "--twitch-disable-ads", m3u8_link, self.quality, "-o", file_path])
 
                 if ret != 0:
                     logger.warning("Unexpected error.")

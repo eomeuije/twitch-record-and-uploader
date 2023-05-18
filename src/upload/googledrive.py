@@ -7,12 +7,16 @@ import os, os.path, threading, traceback
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
+import subprocess
 
 
 class Upload:
 
     # If modifying these scopes, delete the file token.json.
-    SCOPES = ["https://www.googleapis.com/auth/drive"]
+    SCOPES = [
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/youtube.upload"
+    ]
     twitch_id = 'bijou_v'
     lock = threading.Lock()
 
@@ -78,26 +82,44 @@ class Upload:
         with self.lock:
             file_list = os.listdir(self.downloads_path)
             for file in file_list:
+                if file.startswith('.'):
+                    continue
                 file_full_path = os.path.join(self.downloads_path, file)
                 if not os.path.isfile(file_full_path):
                     continue
+                hidden = os.path.join(self.downloads_path, '.' + file)
+                os.rename(file_full_path, hidden)
+                file_full_path = hidden
+                mp4_file = file.replace('.ts', '.mp4')
+                mp4_file_full_path = os.path.join(self.downloads_path, '.' + mp4_file)
+
+                ffmpeg_command = f'ffmpeg -i "{file_full_path}" -c:v copy -c:a copy "{mp4_file_full_path}"'
+                return_code = subprocess.call(ffmpeg_command, shell=True)
+                if return_code == 0:
+                    target_file = mp4_file
+                    target_file_full_path = mp4_file_full_path
+                else:
+                    target_file = file
+                    target_file_full_path = file_full_path
 
                 file_metadata = {
-                    'name': file,
-                    'mimeType': 'video/' + file.split('.')[-1],
+                    'name': target_file,
+                    'mimeType': 'video/' + target_file.split('.')[-1],
                     'parents': [parentId]
                 }
-                media = MediaFileUpload(file_full_path, mimetype='video/' + file.split('.')[-1],
+                media = MediaFileUpload(target_file_full_path, mimetype='video/' + file.split('.')[-1],
                                         resumable=True)
                 # pylint: disable=maybe-no-member
                 try:
-                    print(F'File with Name: "{file}" start uploading.')
+                    print(F'File with Name: "{target_file}" start uploading.')
                     service_result = service.files().create(body=file_metadata, media_body=media, 
                                             fields='id').execute()     
                     print(F'File with ID: "{service_result.get("id")}" has been uploaded.')
                     media.stream().close()
-                    if os.path.isfile(file_full_path):
-                        os.remove(file_full_path)                      
+                    if return_code == 0 and os.path.isfile(file_full_path):
+                        os.remove(file_full_path)   
+                    if os.path.isfile(mp4_file_full_path):
+                        os.remove(mp4_file_full_path)                   
                 except HttpError as error:
                     print(F'An error occurred: {error}')
                     traceback.print_exc()
@@ -106,6 +128,8 @@ class Upload:
                     print(F'An Exception occurred: {error}')
                     traceback.print_exc()
                     continue
+                    
+                
 
     def upload(self, id):
         self.twitch_id = id
@@ -117,5 +141,4 @@ class Upload:
 
 if __name__ == '__main__':
     u = Upload()
-    thread = threading.Thread(target=u.upload, args=['pgonhada'])
-    thread.start()
+    u.upload('pgonhada')

@@ -68,3 +68,8 @@ class Vpngate():
                 pass
             time.sleep(0.1)
         return p
+    
+if __name__ == "__main__":
+    vpngate = Vpngate("JAPAN").start_vpn()
+    while True:
+        pass
