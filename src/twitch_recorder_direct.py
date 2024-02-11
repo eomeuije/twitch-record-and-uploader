@@ -30,7 +30,7 @@ from src.vpngate import Vpngate
 from typing import List, TypedDict, Union
 import requests
 import json
-from src.convert_format import convert_format
+from src.convert_format.convert_format import convert_format
 
 
 FILE_NAME_FORMAT = "{user_login} - {stream_started} - {escaped_title}.ts"
@@ -232,7 +232,6 @@ class TwitchRecorder:
                 logger.info("Recording stream is done. Going back to checking...")
                 if self.ffmpeg:
                     output_path = file_path + '.mp4'
-                    u = convert_format()
                     if self.drive:
                         upload_username = self.username
                     else:
