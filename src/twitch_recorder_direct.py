@@ -30,6 +30,7 @@ from src.vpngate import Vpngate
 from typing import List, TypedDict, Union
 import requests
 import json
+from src.convert_format import convert_format
 
 
 FILE_NAME_FORMAT = "{user_login} - {stream_started} - {escaped_title}.ts"
@@ -70,7 +71,7 @@ class StreamData(TypedDict):
 
 class TwitchRecorder:
 
-    def __init__(self, username: str, quality: str, country: str) -> None:
+    def __init__(self, username: str, country: str, quality:str = 'best', drive:bool = True, ffmpeg:bool = True, gpu:bool = True) -> None:
         logger.info("Twitch Recorder initializing start!")
 
         with open(os.path.join(os.path.dirname(__file__), '../tokens/twitch/twitchAPI.json'), 'r') as file:
@@ -90,6 +91,9 @@ class TwitchRecorder:
 
         self.username = username
         self.quality = quality
+        self.drive = drive
+        self.ffmpeg = ffmpeg
+        self.gpu = gpu
 
         self.file_dir = os.path.join(self.root_path, self.username)
 
@@ -219,28 +223,27 @@ class TwitchRecorder:
                 # start streamlink process
                 logger.info("Straming video will save at %s", file_path)
 
-                # vpn = Vpngate(self.country).start_vpn()
-
                 ret = subprocess.call(["streamlink", "--twitch-api-header", "Authorization=" + self.TWITCH_AUTH_TOKEN, "--twitch-disable-hosting", "--twitch-disable-ads", "twitch.tv/" + self.username, self.quality, "-o", file_path])
-
-                # get m3u8 link from https://github.com/Kwabang/Twitch-API#hls
-                # url = "http://localhost:5000/hls?id=" + self.username + "&oauth=" + self.TWITCH_AUTH_TOKEN
-                # m3u8_link = requests.get(url).text
-                # m3u8_link = m3u8_link.split('"')[1]
-                # print(m3u8_link)
-
-                # ret = subprocess.call(["py", "C:/Users/euije/AppData/Roaming/Python/Python311/site-packages/streamlink/__main__.py", "streamlink", "--twitch-disable-hosting", "--twitch-disable-ads", m3u8_link, self.quality, "-o", file_path])
 
                 if ret != 0:
                     logger.warning("Unexpected error.")
 
-                # vpn.kill()
-
                 # end streamlink process
                 logger.info("Recording stream is done. Going back to checking...")
-                u = Upload()
-                thread = threading.Thread(target=u.upload, args=[self.username])
-                thread.start()
+                if self.ffmpeg:
+                    output_path = file_path + '.mp4'
+                    u = convert_format()
+                    if self.drive:
+                        upload_username = self.username
+                    else:
+                        upload_username = None
+                    thread = threading.Thread(target=convert_format.convert_video, args=[file_path, output_path, upload_username, self.gpu])
+                    thread.start()
+                else:
+                    if self.drive:
+                        u = Upload()
+                        thread = threading.Thread(target=u.upload, args=[self.username])
+                        thread.start()
                 time.sleep(self.refresh)
 
     def run(self):

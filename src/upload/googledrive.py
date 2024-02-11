@@ -7,7 +7,6 @@ import os, os.path, threading, traceback
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
-import subprocess
 
 
 class Upload:
@@ -90,36 +89,23 @@ class Upload:
                 hidden = os.path.join(self.downloads_path, '.' + file)
                 os.rename(file_full_path, hidden)
                 file_full_path = hidden
-                mp4_file = file.replace('.ts', '.mp4')
-                mp4_file_full_path = os.path.join(self.downloads_path, '.' + mp4_file)
-
-                ffmpeg_command = f'ffmpeg -i "{file_full_path}" -c:v copy -c:a copy "{mp4_file_full_path}"'
-                return_code = subprocess.call(ffmpeg_command, shell=True)
-                if return_code == 0:
-                    target_file = mp4_file
-                    target_file_full_path = mp4_file_full_path
-                else:
-                    target_file = file
-                    target_file_full_path = file_full_path
 
                 file_metadata = {
-                    'name': target_file,
-                    'mimeType': 'video/' + target_file.split('.')[-1],
+                    'name': file,
+                    'mimeType': 'video/' + file.split('.')[-1],
                     'parents': [parentId]
                 }
-                media = MediaFileUpload(target_file_full_path, mimetype='video/' + file.split('.')[-1],
+                media = MediaFileUpload(file_full_path, mimetype='video/' + file.split('.')[-1],
                                         resumable=True)
                 # pylint: disable=maybe-no-member
                 try:
-                    print(F'File with Name: "{target_file}" start uploading.')
+                    print(F'File with Name: "{file}" start uploading.')
                     service_result = service.files().create(body=file_metadata, media_body=media, 
                                             fields='id').execute()     
                     print(F'File with ID: "{service_result.get("id")}" has been uploaded.')
                     media.stream().close()
-                    if return_code == 0 and os.path.isfile(file_full_path):
-                        os.remove(file_full_path)   
-                    if os.path.isfile(mp4_file_full_path):
-                        os.remove(mp4_file_full_path)                   
+                    if os.path.isfile(file_full_path):
+                        os.remove(file_full_path)                   
                 except HttpError as error:
                     print(F'An error occurred: {error}')
                     traceback.print_exc()
