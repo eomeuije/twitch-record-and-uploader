@@ -86,7 +86,7 @@ class TwitchRecorder:
         self._oauth_token_expires = 0
 
         self.ffmpeg_path = "ffmpeg"
-        self.refresh = 2.0
+        self.refresh = 60
         self.root_path = os.path.join(os.path.dirname(__file__), '../downloads')
 
         self.username = username
@@ -190,7 +190,7 @@ class TwitchRecorder:
                 return
             return data[0]
         except requests.RequestException as e:
-            logger.error("Fail to get stream info: %s", e)
+            logger.error("Fail to get stream info: %s", e) 
             return
 
     def loop(self):
